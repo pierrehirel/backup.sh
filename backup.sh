@@ -30,12 +30,15 @@
 ### If you wish to run in verbose mode:
 ###   bash backup.sh --verbose
 
+### Name of current script
+name="${0##*/}"
+
 ### List of folders from your home directory (/home/user/) to backup
 ### Add or remove the desired folders from this list
 folders="bin Documents"
 
 ### Name of remote machine or NAS
-remote="mymachine"
+remote="address-of-remote-machine"
 
 ### Port for ssh access on remote machine
 port=22
@@ -62,9 +65,6 @@ fi
 ### If you deleted files on your desktop computer, and want to remove
 ### them on the remote machine, then uncomment the following line:
 #arg+=" --delete-after"
-
-### Name of current script
-name="${0##*/}"
 
 ### Username on local computer (automatic detection)
 u=$(whoami)
@@ -102,7 +102,28 @@ if [ "$1" = "--install" ] ; then
     mkdir -p ~/bin
     cp  ${0}  /home/${u}/bin
     chmod +x ~/bin/$name
-    printf " Done.\n\n"
+    printf "  <?> Enter the URL or IP address of the remote machine: "
+    read answer
+    remote="${answer}"
+    sed -i "/^remote=/ c\remote=\"${remote}\"" ~/bin/${name}
+
+    printf "  <?> Enter the name of the administrator of the remote machine: "
+    read answer
+    sed -i "/^REMOTEADMIN=/ c\REMOTEADMIN=\"${answer}\"" ~/bin/${name}
+
+    printf "  <?> Enter the SSH port of the remote machine (default=22): "
+    read answer
+    port=$(echo "${answer}" | bc)
+    if [ ${#answer} != 0 ] ; then
+      sed -i "/^port=/ c\port=${answer}" ~/bin/${name}
+    fi
+
+    printf "  <?> List of folders from your /home/ directory that you want to backup: "
+    read answer
+    sed -i "/^folders=/ c\folders=\"${answer}\"" ~/bin/${name}
+
+    printf "  "
+    printf "  Done. If you wish to change these settings, edit the file ~/bin/${name}\n\n"
   fi
   
   printf "  (2) Do you wish to add task to your crontab? (y/n) "
@@ -175,6 +196,17 @@ fi
 if [[ "$#" -gt 0 ]] ; then
   ### User tried to use arguments, can't understand them
   echo "X!X ERROR: illegal command-line arguments."
+  exit
+fi
+
+### Test if user is running the generic script (where remote address is invalid)
+if [ "${remote}" = "address-of-remote-machine" ] ; then
+  echo "  /!\ WARNING: you seem to be running this script for the first time,"
+  echo "      and it is not properly configured."
+  echo "      Please run it with the following command to set it up:"
+  echo ""
+  echo "           bash ${name} --install"
+  echo ""
   exit
 fi
 
