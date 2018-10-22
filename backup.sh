@@ -35,7 +35,7 @@ name="${0##*/}"
 
 ### List of folders from your home directory (/home/user/) to backup
 ### Add or remove the desired folders from this list
-folders="bin Documents"
+folders="Documents"
 
 ### Name of remote machine or NAS
 remote="address-of-remote-machine"
@@ -102,28 +102,43 @@ if [ "$1" = "--install" ] ; then
     mkdir -p ~/bin
     cp  ${0}  /home/${u}/bin
     chmod +x ~/bin/$name
-    printf "  <?> Enter the URL or IP address of the remote machine: "
+    printf "  <?> Enter the URL or IP address of the remote machine (default=none): "
     read answer
+    while [ ${#answer} = 0 ] ; do
+      printf "  X!X ERROR: you must enter the name or IP address of a remote machine: "
+      read answer
+    done
     remote="${answer}"
     sed -i "/^remote=/ c\remote=\"${remote}\"" ~/bin/${name}
+    
+    printf "  <?> Enter your login on the remote machine (default=$u): "
+    read answer
+    if [ ${#answer} != 0 ] ; then
+      sed -i "/^v=/ c\v=${answer}" ~/bin/${name}
+    fi
 
     printf "  <?> Enter the name of the administrator of the remote machine: "
     read answer
-    sed -i "/^REMOTEADMIN=/ c\REMOTEADMIN=\"${answer}\"" ~/bin/${name}
+    if [ ${#answer} != 0 ] ; then
+      sed -i "/^REMOTEADMIN=/ c\REMOTEADMIN=\"${answer}\"" ~/bin/${name}
+    fi
 
     printf "  <?> Enter the SSH port of the remote machine (default=22): "
     read answer
-    port=$(echo "${answer}" | bc)
     if [ ${#answer} != 0 ] ; then
+      port=$(echo "${answer}" | bc)
       sed -i "/^port=/ c\port=${answer}" ~/bin/${name}
     fi
 
-    printf "  <?> List of folders from your /home/ directory that you want to backup: "
+    printf "  <?> List of folders from your /home/ directory that you want to backup (default=\"Documents\"): "
     read answer
-    sed -i "/^folders=/ c\folders=\"${answer}\"" ~/bin/${name}
+    if [ ${#answer} != 0 ] ; then
+      answer=$(echo ${answer//[,;:?!]/ })
+      sed -i "/^folders=/ c\folders=\"${answer}\"" ~/bin/${name}
+    fi
 
     printf "  "
-    printf "  Done. If you wish to change these settings, edit the file ~/bin/${name}\n\n"
+    printf "  <i> Done. If you wish to change these settings, edit the file ~/bin/${name}\n\n"
   fi
   
   printf "  (2) Do you wish to add task to your crontab? (y/n) "
